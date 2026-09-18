@@ -72,6 +72,7 @@ def train_and_evaluate(path: Path) -> dict[str, object]:
         ),
         "train_rows": len(train_features),
         "validation_rows": len(validation_features),
+        "top_feature": FEATURES[model.feature_importances_.argmax()],
     }
 
 
@@ -86,6 +87,7 @@ def main() -> None:
     print(f"Entrenamiento: {metrics['train_rows']} filas")
     print(f"Validación: {metrics['validation_rows']} filas")
     print(f"Accuracy: {metrics['validation_accuracy']:.4f}")
+    print(f"Variable más relevante: {metrics['top_feature']}")
 
 
 if __name__ == "__main__":
