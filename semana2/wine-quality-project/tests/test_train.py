@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from wine_quality.train import FEATURES, load_dataset, train_and_evaluate
+from src.wine_quality.train import FEATURES, load_dataset, train_and_evaluate
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATASET_PATH = PROJECT_ROOT / "data" / "raw" / "WineQT.csv"
