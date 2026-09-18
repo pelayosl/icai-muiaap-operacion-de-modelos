@@ -69,6 +69,8 @@ def train_and_evaluate(path: Path) -> dict[str, object]:
             average="macro",
             zero_division=0,
         ),
+        "train_rows": len(train_features),
+        "validation_rows": len(validation_features),
     }
 
 
@@ -80,6 +82,8 @@ def main() -> None:
     print(f"Variables: {metrics['features']}")
     print(f"Clases: {len(metrics['classes'])}")
     print(f"F1 macro: {metrics['validation_f1_macro']:.4f}")
+    print(f"Entrenamiento: {metrics['train_rows']} filas")
+    print(f"Validación: {metrics['validation_rows']} filas")
 
 
 if __name__ == "__main__":
