@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.metrics import f1_score
+from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
 
 FEATURES = [
@@ -63,6 +63,7 @@ def train_and_evaluate(path: Path) -> dict[str, object]:
         "rows": len(dataset),
         "features": len(FEATURES),
         "classes": sorted(target.unique().tolist()),
+        "validation_accuracy": accuracy_score(validation_target, predictions),
         "validation_f1_macro": f1_score(
             validation_target,
             predictions,
@@ -84,6 +85,7 @@ def main() -> None:
     print(f"F1 macro: {metrics['validation_f1_macro']:.4f}")
     print(f"Entrenamiento: {metrics['train_rows']} filas")
     print(f"Validación: {metrics['validation_rows']} filas")
+    print(f"Accuracy: {metrics['validation_accuracy']:.4f}")
 
 
 if __name__ == "__main__":
