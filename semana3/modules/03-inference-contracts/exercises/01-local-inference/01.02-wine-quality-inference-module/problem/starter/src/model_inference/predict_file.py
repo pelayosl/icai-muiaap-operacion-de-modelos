@@ -35,13 +35,16 @@ def predict_file(input: Path, output: Path, model_path: Path) -> None:
 
     predictions = []
     for sample_id, request in requests:
-        quality, confidence = infer_wine_quality(
+        quality_band, confidence = infer_wine_quality(
             model, preprocess_wine_request(request).as_vector()
         )
         predictions.append(
             WineQualityPrediction(
-                quality=quality,
-                confidence=confidence
+                sample_id=sample_id,
+                quality_band=quality_band,
+                confidence=confidence,
+                model_version=model.get("model_version", "unknown"),
+                preprocessing_version=model.get("preprocessing_version", "wine-red-features-v1"),
             ).model_dump()
         )
 

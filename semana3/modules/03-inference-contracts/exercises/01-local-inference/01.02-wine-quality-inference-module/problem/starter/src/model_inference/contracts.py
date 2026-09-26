@@ -21,7 +21,10 @@ class WineQualityRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 class WineQualityPrediction(BaseModel):
-    quality: str = Field(..., description="Predicted quality of the wine")
+    sample_id: str = Field(..., description="Unique identifier for the wine sample")
+    quality_band: str = Field(..., description="Predicted quality of the wine")
     confidence: float = Field(..., ge=0, le=1, description="Confidence of the prediction")
-    
+    model_version: str = Field(..., description="Version of the model used for prediction")
+    preprocessing_version: str = Field(..., description="Version of the preprocessing used for prediction")
+
     model_config = ConfigDict(extra="forbid")
