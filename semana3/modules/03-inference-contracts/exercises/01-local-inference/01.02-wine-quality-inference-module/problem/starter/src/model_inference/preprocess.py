@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 from model_inference.contracts import WineQualityRequest
 
+PREPROCESSING_VERSION = "wine-red-features-v1"
+
 FEATURE_NAMES = (
     "fixed_acidity",
     "volatile_acidity",
