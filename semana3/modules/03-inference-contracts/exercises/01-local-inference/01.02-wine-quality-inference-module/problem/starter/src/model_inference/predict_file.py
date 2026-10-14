@@ -60,7 +60,8 @@ def predict_file(input: Path, output: Path, model_path: Path) -> None:
             ).model_dump()
         )
 
-#   Escribir en el csv, sin permitir CSV parcial (utilizo un archivo temporal primero)
+    #   Escribir en el csv, sin permitir CSV parcial (utilizo un archivo 
+    #   temporal primero)
     output.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(dir=output.parent, suffix=".tmp")
     try:
