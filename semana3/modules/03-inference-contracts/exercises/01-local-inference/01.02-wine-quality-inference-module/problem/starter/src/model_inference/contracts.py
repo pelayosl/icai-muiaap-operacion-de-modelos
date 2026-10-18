@@ -23,10 +23,10 @@ class WineQualityRequest(BaseModel):
     total_sulfur_dioxide: float = Field(
         ge=0, le=300, description="Total sulfur dioxide content of the wine"
     )
-    density: float = Field(ge=0, le=1.01, description="Density of the wine")
-    ph: float = Field(ge=0, le=4.5, description="pH level of the wine")
+    density: float = Field(ge=0.98, le=1.01, description="Density of the wine")
+    ph: float = Field(ge=2.5, le=4.5, description="pH level of the wine")
     sulphates: float = Field(ge=0, le=3, description="Sulphate content of the wine")
-    alcohol: float = Field(ge=0, le=20, description="Alcohol content of the wine")
+    alcohol: float = Field(ge=5, le=20, description="Alcohol content of the wine")
 
 
 class WineQualityPrediction(BaseModel):
