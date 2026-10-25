@@ -15,12 +15,11 @@ def collect_profile(st: Any) -> tuple[bool, dict[str, object]]:
     # inferencias durante cada edición. Compruébalo con el primer test de app.
 
     with st.form("churn_form"):
-        # Las keys sirven para vincular cada widget a una variable en st.session_state
         tenure_months = st.slider(
-            "Antigüedad", min_value=0, max_value=120, value=12, key="tenure_months"
+            "Antigüedad (meses)", min_value=0, max_value=120, value=12, key="tenure_months"
         )
         monthly_spend_eur = st.number_input(
-            "Gasto mensual",
+            "Gasto mensual (€)",
             min_value=0.0,
             max_value=300.0,
             value=60.0,
@@ -51,12 +50,11 @@ def render_prediction(st: Any, result: ChurnPrediction) -> None:
     """Muestra etiqueta, score orientativo y explicación."""
     # TODO 3 (alumno): presenta label, risk_score y explanation con componentes
     # Streamlit. No recalcules el score. Compruébalo con el test de presentación.
-    decision = result["will_churn"]
-    if decision:
+    if result["will_churn"]:
         st.warning(result["label"])
     else:
         st.success(result["label"])
-    st.write(result["risk_score"])
+    st.write(f"Score de riesgo: {result['risk_score']:.2f}")
     st.write(result["explanation"])
 
 
@@ -73,6 +71,7 @@ def run_app(st: Any, predictor: Predictor) -> None:
             render_prediction(st, result)
     except ValueError:
         st.error("No se pudo calcular el riesgo con los datos indicados.")
+    
 
 
 def main() -> None:
