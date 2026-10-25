@@ -43,33 +43,54 @@ def definir_tool() -> dict:
 #       (tool desconocida, JSON roto, datos invalidos o campos inventados -> ok False con el error)
 
 def ejecutar_tool(nombre, argumentos_json) -> dict:
-    try:
-        PrestamoEntrada.model_validate_json(argumentos_json)
-    except ValueError:
-        return {"ok": False}
+    if nombre != NOMBRE_TOOL:
+        return {"ok": False, "error": f"Herramienta desconocida: {nombre}"}
 
-    if(nombre != NOMBRE_TOOL):
-        return {"ok": False}
-    
-    return {"ok": True}
+    argumentos = leer_argumentos(argumentos_json)
+    try:
+        entrada = PrestamoEntrada(**argumentos)
+    except ValidationError as e:
+        return {"ok": False, "error": str(e)}
+
+    prediccion = predecir(entrada)
+    return {"ok": True, **prediccion.model_dump()}
 
 # TODO: responder(mensajes, llm) -> ChatSalida, con el bucle LLM -> tool -> LLM (maximo MAX_VUELTAS)
 
-def responder(mensajes: list, llm: LLMSimulado) -> ChatSalida:
+def responder(mensajes: list, llm) -> ChatSalida:
     historial = []
     historial.append({"role": "system", "content": SISTEMA})
-
-    for i in range(MAX_VUELTAS):
-        historial.extend(mensajes)
+    historial.extend(m.model_dump() for m in mensajes) # model_dump porque mensajes es una lista
+                                                       # list[Mensaje], y queremos tratarlos como dicts
+    herramienta = None
+    for _ in range(MAX_VUELTAS):
         respuesta_llm = llm.completar(historial, [definir_tool()])
-        if respuesta_llm.get("role") == "assistant" and respuesta_llm.get("content"):
-            return ChatSalida(respuesta=respuesta_llm["content"])
-        elif respuesta_llm.get("role") == "assistant" and respuesta_llm.get("tool_calls"):
+        if respuesta_llm.get("tool_calls"):
             tool_call = respuesta_llm["tool_calls"][0]
             tool_name = tool_call["function"]["name"]
             tool_args = tool_call["function"]["arguments"]
             resultado_tool = ejecutar_tool(tool_name, tool_args)
-            mensajes.append({"role": "tool", "content": json.dumps(resultado_tool)})
+            # Lo que pidió el asistente
+            historial.append(respuesta_llm)
+
+            # Lo que devolvió la tool
+            historial.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call["id"],
+                    "content": json.dumps(resultado_tool),
+                }
+            )
+            herramienta = HerramientaUsada(
+                nombre=tool_name,
+                argumentos=leer_argumentos(tool_args),
+                resultado=resultado_tool,
+            )
+        elif respuesta_llm.get("content"):
+            return ChatSalida(respuesta=respuesta_llm["content"], herramienta=herramienta)
         else:
             break
-    return ChatSalida(respuesta="No he podido responder a tu solicitud. Por favor, inténtalo de nuevo más tarde.")
+    return ChatSalida(
+        respuesta="No he podido responder a tu solicitud. Por favor, inténtalo de nuevo más tarde.",
+        herramienta=herramienta,
+    )
