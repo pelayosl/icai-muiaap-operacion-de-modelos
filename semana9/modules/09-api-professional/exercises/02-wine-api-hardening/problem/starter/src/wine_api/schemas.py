@@ -38,17 +38,17 @@ class WineFeatures(BaseModel):
     # TODO S9.3d: añade `description=` a cada Field (unidad incluida, p. ej.
     # "Alcohol (% vol.)."). Swagger la muestra junto al rango; el test
     # `test_feature_fields_are_described` comprueba los once campos.
-    fixed_acidity: float = Field(ge=0, le=20)
-    volatile_acidity: float = Field(ge=0, le=2)
-    citric_acid: float = Field(ge=0, le=2)
-    residual_sugar: float = Field(ge=0, le=20)
-    chlorides: float = Field(ge=0, le=1)
-    free_sulfur_dioxide: float = Field(ge=0, le=100)
-    total_sulfur_dioxide: float = Field(ge=0, le=300)
-    density: float = Field(ge=0.98, le=1.01)
-    ph: float = Field(ge=2.5, le=4.5)
-    sulphates: float = Field(ge=0, le=3)
-    alcohol: float = Field(ge=5, le=20)
+    fixed_acidity: float = Field(ge=0, le=20, description="Fixed acidity (g/dm³).")
+    volatile_acidity: float = Field(ge=0, le=2, description="Volatile acidity (g/dm³).")
+    citric_acid: float = Field(ge=0, le=2, description="Citric acid (g/dm³).")
+    residual_sugar: float = Field(ge=0, le=20, description="Residual sugar (g/dm³).")
+    chlorides: float = Field(ge=0, le=1, description="Chlorides (g/dm³).")
+    free_sulfur_dioxide: float = Field(ge=0, le=100, description="Free sulfur dioxide (mg/dm³).")
+    total_sulfur_dioxide: float = Field(ge=0, le=300, description="Total sulfur dioxide (mg/dm³).")
+    density: float = Field(ge=0.98, le=1.01, description="Density (g/cm³).")
+    ph: float = Field(ge=2.5, le=4.5, description="pH.")
+    sulphates: float = Field(ge=0, le=3, description="Sulphates (g/dm³).")
+    alcohol: float = Field(ge=5, le=20, description="Alcohol (% vol.).")
 
 
 class PredictionRequest(BaseModel):
@@ -70,23 +70,30 @@ class QualityBand(StrEnum):
 class Prediction(BaseModel):
     """Predicción pública: no incluye puntuaciones internas del modelo."""
 
-    # TODO S9.1a: declara los cuatro campos públicos del contrato de S7:
-    # `quality_band` (usa QualityBand, no `str`), `confidence` (entre 0 y 1),
-    # `model_version` y `preprocessing_version`. Lo que no declares aquí no
-    # saldrá en la respuesta: así se filtra `raw_score`.
-    # TODO S9.1b: el modelo devuelve la confianza con todos sus decimales; el
-    # contrato público la expone con dos. Investiga `@field_serializer` de
-    # Pydantic v2: la decisión pertenece al contrato, no al predictor.
-    # Comprobación: tests/test_s9_1_output_contract.py
+    # S9.1a
+    quality_band: QualityBand
+    confidence: float = Field(ge=0, le=1)
+    model_version: str = Field(min_length=1)
+    preprocessing_version: str = Field(min_length=1)
+    # S9.1b
+    @field_serializer("confidence")
+    def serialize_confidence(self, confidence: float) -> float:
+        return round(confidence, 2)
 
 
 class PredictionResponse(BaseModel):
     """Respuesta de `POST /v1/predictions`."""
 
-    # TODO S9.1c: declara `prediction: Prediction`, `request_id: str` y un campo
-    # nuevo `served_at: datetime`. Serialízalo en UTC, ISO 8601 y con sufijo
-    # `Z` (por ejemplo `2026-10-20T09:15:00.123Z`). Añadir un campo es un
-    # cambio compatible: ¿qué parte de la versión de la API debes subir?
+    # S9.1c
+    # ¿qué parte de la versión de la API debes subir?
+    # -- MINOR
+    prediction: Prediction
+    request_id: str
+    served_at: datetime
+
+    @field_serializer("served_at")
+    def serialize_served_at(self, served_at: datetime) -> str:
+        return served_at.astimezone(UTC).isoformat(timespec="milliseconds").replace('+00:00', 'Z')
 
 
 class HealthResponse(BaseModel):

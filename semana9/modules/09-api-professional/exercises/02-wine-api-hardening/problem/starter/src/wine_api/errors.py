@@ -72,13 +72,16 @@ async def handle_validation_error(
     # - Si no, 422 con `ErrorCode.VALIDATION_ERROR` y una lista de FieldError
     #   (usa `field_path`). Nunca copies `input`: puede contener datos del
     #   usuario. Comprobación: tests/test_s9_2_errors.py
-    raise NotImplementedError("TODO S9.2a")
-
+    for error in exc.errors():
+        if error["type"] == "json_invalid":
+            return error_response(request, status_code=400, code=ErrorCode.INVALID_JSON, message="Body is not JSON")
+    return error_response(request, status_code=422, code=ErrorCode.VALIDATION_ERROR, message="Validation error") 
 
 async def handle_api_error(request: Request, exc: WineApiError) -> JSONResponse:
     # TODO S9.2b: traduce cualquier WineApiError usando los atributos de clase
     # `status_code`, `code` y `message`. Una línea con `error_response`.
-    raise NotImplementedError("TODO S9.2b")
+
+    return error_response(request, status_code=exc.status_code, code=exc.code, message=exc.message)
 
 
 async def handle_http_exception(
@@ -87,6 +90,11 @@ async def handle_http_exception(
     # TODO S9.2c: 404 y 405 los genera Starlette, no tus rutas. Busca el código
     # en HTTP_ERROR_CODES (ErrorCode.HTTP_ERROR si no está) y responde con el
     # mismo sobre. ¿Por qué se registra la clase de Starlette y no la de FastAPI?
+    code, msg = HTTP_ERROR_CODES.get(exc.status_code)
+    if not code:
+        code = ErrorCode.HTTP_ERROR
+        msg = exc.detail
+    
     raise NotImplementedError("TODO S9.2c")
 
 
