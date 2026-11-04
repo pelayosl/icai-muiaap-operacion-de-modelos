@@ -27,14 +27,20 @@ DEFAULT_LATENCY_POLICY = LatencyPolicy()
 def classify_confidence(
     confidence: float, policy: ConfidencePolicy = DEFAULT_CONFIDENCE_POLICY
 ) -> ConfidenceLevel:
-    """TODO: valida [0, 1] y devuelve low/medium/high según policy."""
-
-    raise NotImplementedError("TODO: clasifica la confianza con la política acordada")
+    """Valida [0, 1] y devuelve low/medium/high según policy."""
+    if not (0 <= confidence <= 1):
+        raise ValueError(f"El valor debe estar entre 0 y 1: {confidence}")
+    if confidence < policy.low_below:
+        return "low"
+    if confidence >= policy.high_from:
+        return "high"
+    return "medium"
 
 
 def classify_latency(
     latency_ms: float, policy: LatencyPolicy = DEFAULT_LATENCY_POLICY
 ) -> LatencyStatus:
-    """TODO: devuelve within_target o above_target para una latencia válida."""
-
-    raise NotImplementedError("TODO: clasifica la latencia")
+    """Devuelve within_target o above_target para una latencia válida."""
+    if latency_ms < 0:
+        raise ValueError(f"La latencia no puede ser negativa: {latency_ms}")
+    return "within_target" if latency_ms <= policy.target_ms else "above_target"
