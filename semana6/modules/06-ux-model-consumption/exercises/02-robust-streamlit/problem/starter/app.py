@@ -74,15 +74,48 @@ def collect_values(st: Any) -> tuple[bool, dict[str, float]]:
 
 
 def get_cached_gateway(st: Any, bundle_value: str | None) -> InferenceGateway:
-    """TODO: usa `st.cache_resource` sobre el gateway, no sobre la respuesta."""
+    """usa `st.cache_resource` sobre el gateway, no sobre la respuesta."""
 
-    raise NotImplementedError("TODO: cachea el gateway heredado de S5")
+    cached_build = st.cache_resource(show_spinner=False)(build_gateway)
+    return cached_build(bundle_value)
 
 
 def render_state(st: Any, state: UiState, target: Any | None = None) -> None:
-    """TODO: presenta idle/loading/success/error en un target de Streamlit."""
+    """Presenta idle/loading/success/error en un target de Streamlit"""
 
-    raise NotImplementedError("TODO: renderiza el estado sin mostrar excepciones")
+    container = target.container() if target is not None else st.container()
+    with container:
+        if state.phase == "idle":
+            st.info(
+                "Rellena las características del vino y pulsa «Ejecutar inferencia»."
+            )
+        elif state.phase == "loading":
+            st.info(f"Ejecutando inferencia… (petición {state.request_id})")
+        elif state.phase == "error" and state.error is not None:
+            error = state.error
+            st.error(f"**{error.title}**\n\n{error.message}")
+            st.write(f"Qué puedes hacer: {error.recovery}")
+            st.caption(f"Referencia de la petición: `{error.request_id}`")
+        elif state.phase == "success" and state.view is not None:
+            view = state.view
+            quality_col, confidence_col, latency_col = st.columns(3)
+            quality_col.metric("Categoría", view.quality_label)
+            confidence_col.metric("Confianza", f"{view.confidence:.0%}")
+            latency_col.metric("Latencia", f"{view.latency_ms:.1f} ms")
+
+            if view.confidence_level == "high":
+                st.info(f"**{view.confidence_label}.** {view.confidence_message}")
+            else:
+                st.warning(f"**{view.confidence_label}.** {view.confidence_message}")
+            if view.latency_status == "above_target":
+                st.warning(f"**{view.latency_label}.** {view.latency_message}")
+
+            with st.expander("Versiones y petición"):
+                st.write(f"Modelo: `{view.model_version}`")
+                st.write(f"Preprocesado: `{view.preprocessing_version}`")
+                st.write(f"Petición: `{state.request_id}`")
+        else:
+            st.warning("Estado no reconocido. Vuelve a ejecutar la inferencia.")
 
 
 def main() -> None:
@@ -129,7 +162,7 @@ def main() -> None:
         st.rerun()
 
     state = st.session_state[LAST_STATE_KEY]
-    render_state(st, state)
+    render_state(st, state, state_slot)
     if state.phase == "error" and st.session_state[LAST_VALUES_KEY]:
         if st.button("Reintentar"):
             retry_state = controller.submit(st.session_state[LAST_VALUES_KEY])
