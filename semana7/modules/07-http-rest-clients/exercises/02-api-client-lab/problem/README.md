@@ -23,12 +23,39 @@ En otra terminal ejecuta el `GET /health` de la [guía curl](../../../examples/c
 **Comprobación:** obtienes `200`, `status: ok`, `model_status: ready` y un
 `request_id`.
 
+```bash
+>> curl.exe -i "$baseUrl/health"
+HTTP/1.1 200 OK
+Server: S7LocalAPI/1.0 Python/3.12.14
+Date: Wed, 11 Nov 2026 10:56:04 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 153
+X-Request-Id: req_94b66edba470
+```
+
 ## 1. Observar el contrato con curl
 
 Ejecuta el POST válido y el inválido ya preparados.
 
 **TODO 1:** registra método, path, `Content-Type`, status, `request_id` y el
 campo rechazado. Explica por qué el segundo caso es `422`, no `400`.
+> El caso inválido es 422 por un error de semántica (no se cumple el contrato de entrada para el JSON)
+
+
+**GET**:
+```json
+{"status": "ok", "service": "pump-maintenance-prediction", "model_status": "ready", "model_version": "pump-risk-1.0.0", "request_id": "req_94b66edba470"}
+```
+
+**POST INVÁLIDO**:
+```json
+{"error": {"code": "validation_error", "message": "JSON is valid but violates the input contract", "fields": [{"field": "measurements.vibration_mm_s", "message": "must be a number"}]}, "request_id": "req_7a26ed48c0e2"}
+```
+
+**POST VÁLIDO**:
+```json
+{"machine_id": "pump-017", "prediction": {"label": "maintenance_required", "risk_score": 0.85}, "model_version": "pump-risk-1.0.0", "request_id": "req_5ca174c96174"}
+```
 
 **Comprobación:** no confundas `maintenance_required` con un error HTTP; el
 primer status sigue siendo `200`.
