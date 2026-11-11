@@ -31,3 +31,14 @@ export AZURE_API_KEY=...
 export AZURE_API_BASE=https://<recurso>.openai.azure.com
 export AZURE_API_VERSION=...
 ```
+
+## Arrancar con Docker (extra opcional)
+
+```
+docker compose up -d --build
+```
+
+- `api`: FastAPI en http://localhost:8000 (imagen con las dependencias de `uv.lock`).
+- `streamlit`: frontend en http://localhost:8501; llega a la API por la red de compose (`API_URL=http://api:8000`) y espera a que `api` esté sana (`/health`).
+
+Sin `LLM_MODEL` usa el LLM simulado. Las variables `LLM_MODEL` y `AZURE_*` del entorno se pasan a `api`. Para pararlo: `docker compose down`.

@@ -5,7 +5,6 @@ from pydantic import ValidationError
 from app.schemas.chat import ChatSalida, HerramientaUsada
 from app.schemas.prestamo import PrestamoEntrada
 from app.services.modelo import predecir
-from app.services.llm import LLMSimulado
 
 NOMBRE_TOOL = "calcular_riesgo_impago"
 MAX_VUELTAS = 4
@@ -28,7 +27,6 @@ def leer_argumentos(texto):
     return {}
 
 
-# TODO: definir_tool() -> dict con la definicion de la tool, sacando "parameters" de PrestamoEntrada
 def definir_tool() -> dict:
     return {
         "type": "function",
@@ -39,8 +37,6 @@ def definir_tool() -> dict:
         }
     }
     
-# TODO: ejecutar_tool(nombre, argumentos_json) -> dict con "ok" True/False
-#       (tool desconocida, JSON roto, datos invalidos o campos inventados -> ok False con el error)
 
 def ejecutar_tool(nombre, argumentos_json) -> dict:
     if nombre != NOMBRE_TOOL:
@@ -55,7 +51,6 @@ def ejecutar_tool(nombre, argumentos_json) -> dict:
     prediccion = predecir(entrada)
     return {"ok": True, **prediccion.model_dump()}
 
-# TODO: responder(mensajes, llm) -> ChatSalida, con el bucle LLM -> tool -> LLM (maximo MAX_VUELTAS)
 
 def responder(mensajes: list, llm) -> ChatSalida:
     historial = []

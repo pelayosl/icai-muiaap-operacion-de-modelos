@@ -1,0 +1,29 @@
+services:
+  api:
+    build: .
+    image: practica8-chatbot
+    ports:
+      - "8000:8000"
+    environment:
+      # Vacío = LLM simulado. Para un LLM real: LLM_MODEL=azure/<deployment> u ollama/<modelo>
+      LLM_MODEL: ${LLM_MODEL:-}
+      AZURE_API_KEY: ${AZURE_API_KEY:-}
+      AZURE_API_BASE: ${AZURE_API_BASE:-}
+      AZURE_API_VERSION: ${AZURE_API_VERSION:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  streamlit:
+    build: .
+    image: practica8-chatbot
+    command: ["streamlit", "run", "frontend/app.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true"]
+    ports:
+      - "8501:8501"
+    environment:
+      API_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
