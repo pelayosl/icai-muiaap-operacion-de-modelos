@@ -15,7 +15,7 @@ from model_ui.gateway import (
     PackagedBundleGateway,
     UnavailableGateway,
 )
-from model_ui.http_gateway import HttpInferenceGateway  # noqa: F401 - pista S7.5
+from model_ui.http_gateway import HttpInferenceGateway
 from model_ui.session import (
     LAST_STATE_KEY,
     LAST_VALUES_KEY,
@@ -47,8 +47,8 @@ def build_gateway(
 ) -> InferenceGateway:
     """Selecciona el bundle configurado o conserva el gateway demo de S5."""
 
-    # TODO S7.5: si api_url contiene una URL, prioriza
-    # HttpInferenceGateway(api_url) sobre los gateways locales de S6.
+    if api_url and api_url.strip():
+        return HttpInferenceGateway(api_url)
     if not bundle_value:
         return DemoGateway()
     try:
