@@ -42,19 +42,52 @@ campo rechazado. Explica por qué el segundo caso es `422`, no `400`.
 > El caso inválido es 422 por un error de semántica (no se cumple el contrato de entrada para el JSON)
 
 
-**GET**:
-```json
-{"status": "ok", "service": "pump-maintenance-prediction", "model_status": "ready", "model_version": "pump-risk-1.0.0", "request_id": "req_94b66edba470"}
-```
+| Caso | Método | Path | Content-Type respuesta | Status | request_id | Campo rechazado |
+| --- | --- | --- | --- | --- | --- | --- |
+| Salud | `GET` | `/health` | `application/json; charset=utf-8` | `200 OK` | `req_7f35161bb633` | — |
+| POST válido | `POST` | `/v1/predictions` | `application/json; charset=utf-8` | `200 OK` | `req_daf0fdf775c7` | — |
+| POST inválido | `POST` | `/v1/predictions` | `application/json; charset=utf-8` | `422 Unprocessable Entity` | `req_c6c4968a27fc` | `measurements.vibration_mm_s` |
 
-**POST INVÁLIDO**:
-```json
-{"error": {"code": "validation_error", "message": "JSON is valid but violates the input contract", "fields": [{"field": "measurements.vibration_mm_s", "message": "must be a number"}]}, "request_id": "req_7a26ed48c0e2"}
+Las peticiones `POST` se envían con `Content-Type: application/json` y
+`Accept: application/json`.
+
+**GET /health**:
+```text
+$ curl -i "$BASE_URL/health"
+HTTP/1.1 200 OK
+Server: S7LocalAPI/1.0 Python/3.12.14
+Date: Wed, 11 Nov 2026 13:51:17 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 153
+X-Request-Id: req_7f35161bb633
+
+{"status": "ok", "service": "pump-maintenance-prediction", "model_status": "ready", "model_version": "pump-risk-1.0.0", "request_id": "req_7f35161bb633"}
 ```
 
 **POST VÁLIDO**:
-```json
-{"machine_id": "pump-017", "prediction": {"label": "maintenance_required", "risk_score": 0.85}, "model_version": "pump-risk-1.0.0", "request_id": "req_5ca174c96174"}
+```text
+$ curl -i -X POST "$BASE_URL/v1/predictions" -H "Accept: application/json" -H "Content-Type: application/json" --data-binary @examples/pump-maintenance-api/samples/prediction-valid.json
+HTTP/1.1 200 OK
+Server: S7LocalAPI/1.0 Python/3.12.14
+Date: Wed, 11 Nov 2026 13:51:17 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 165
+X-Request-Id: req_daf0fdf775c7
+
+{"machine_id": "pump-017", "prediction": {"label": "maintenance_required", "risk_score": 0.85}, "model_version": "pump-risk-1.0.0", "request_id": "req_daf0fdf775c7"}
+```
+
+**POST INVÁLIDO**:
+```text
+$ curl -i -X POST "$BASE_URL/v1/predictions" -H "Accept: application/json" -H "Content-Type: application/json" --data-binary @examples/pump-maintenance-api/samples/prediction-invalid.json
+HTTP/1.1 422 Unprocessable Entity
+Server: S7LocalAPI/1.0 Python/3.12.14
+Date: Wed, 11 Nov 2026 13:51:17 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 218
+X-Request-Id: req_c6c4968a27fc
+
+{"error": {"code": "validation_error", "message": "JSON is valid but violates the input contract", "fields": [{"field": "measurements.vibration_mm_s", "message": "must be a number"}]}, "request_id": "req_c6c4968a27fc"}
 ```
 
 **Comprobación:** no confundas `maintenance_required` con un error HTTP; el
@@ -107,3 +140,37 @@ que no sea un objeto JSON. Comprueba el test de contrato de salida.
 - salida de un `200` y un `422`;
 - una frase que explique por qué no conviene reintentar ciegamente un POST;
 - ningún cambio en la API de caja negra.
+
+### Cinco tests verdes
+
+```text
+$ uv run python -m unittest discover -s exercises/02-api-client-lab/problem/starter -p "test_*.py" -v
+test_converts_connection_error (test_client.ClientExerciseTest.test_converts_connection_error) ... ok
+test_converts_http_error_and_preserves_status (test_client.ClientExerciseTest.test_converts_http_error_and_preserves_status) ... ok
+test_converts_timeout (test_client.ClientExerciseTest.test_converts_timeout) ... ok
+test_rejects_success_json_that_is_not_an_object (test_client.ClientExerciseTest.test_rejects_success_json_that_is_not_an_object) ... ok
+test_sends_json_accept_and_timeout (test_client.ClientExerciseTest.test_sends_json_accept_and_timeout) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.002s
+
+OK
+```
+
+### Salida de un `200` y un `422`
+
+Están en el apartado 1: el POST válido devuelve `200 OK` (`req_daf0fdf775c7`)
+y el inválido `422 Unprocessable Entity` (`req_c6c4968a27fc`), con
+`measurements.vibration_mm_s` como campo rechazado.
+
+### Por qué no reintentar ciegamente un POST
+
+> `POST /v1/predictions` no es idempotente: si hay un timeout, el cliente no
+> sabe si el servidor llegó a procesar la petición, y reintentarla sin más
+> podría crear una segunda predicción duplicada; además, un `422` no se arregla
+> reintentando, porque el error está en los datos enviados.
+
+### API de caja negra sin cambios
+
+`examples/pump-maintenance-api/` no tiene cambios respecto a `main`
+(`git diff main -- semana7/modules/07-http-rest-clients/examples` vacío).
