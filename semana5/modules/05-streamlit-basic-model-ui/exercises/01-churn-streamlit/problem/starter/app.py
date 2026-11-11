@@ -10,25 +10,61 @@ Predictor = Callable[..., ChurnPrediction]
 
 def collect_profile(st: Any) -> tuple[bool, dict[str, object]]:
     """Renderiza cuatro widgets dentro de un único formulario."""
-    # TODO 1 (alumno): usa st.form("churn_form"), los cuatro widgets con las
-    # claves indicadas en el README y st.form_submit_button. El formulario evita
-    # inferencias durante cada edición. Compruébalo con el primer test de app.
-    raise NotImplementedError("STUDENT TASK: construye el formulario Churn")
+    with st.form("churn_form"):
+        tenure_months = st.slider(
+            "Antigüedad (meses)",
+            min_value=0,
+            max_value=120,
+            value=12,
+            key="tenure_months",
+        )
+        monthly_spend_eur = st.number_input(
+            "Gasto mensual (€)",
+            min_value=0.0,
+            max_value=300.0,
+            value=60.0,
+            key="monthly_spend_eur",
+        )
+        support_calls = st.slider(
+            "Llamadas a soporte",
+            min_value=0,
+            max_value=20,
+            value=1,
+            key="support_calls",
+        )
+        has_annual_contract = st.checkbox(
+            "Contrato anual", value=False, key="has_annual_contract"
+        )
+        is_submitted = st.form_submit_button("Calcular riesgo")
+
+    values = {
+        "tenure_months": tenure_months,
+        "monthly_spend_eur": monthly_spend_eur,
+        "support_calls": support_calls,
+        "has_annual_contract": has_annual_contract,
+    }
+    return is_submitted, values
 
 
 def render_prediction(st: Any, result: ChurnPrediction) -> None:
     """Muestra etiqueta, score orientativo y explicación."""
-    # TODO 3 (alumno): presenta label, risk_score y explanation con componentes
-    # Streamlit. No recalcules el score. Compruébalo con el test de presentación.
-    raise NotImplementedError("STUDENT TASK: presenta la predicción")
+    if result["will_churn"]:
+        st.warning(result["label"])
+    else:
+        st.success(result["label"])
+    st.write(f"Score de riesgo: {result['risk_score']:.2f}")
+    st.write(result["explanation"])
 
 
 def run_app(st: Any, predictor: Predictor) -> None:
     """Conecta submit, llamada al predictor y actualización visible."""
-    # TODO 2 (alumno): llama a collect_profile, ejecuta predictor(**values) solo
-    # tras el submit y una única vez; convierte ValueError en un mensaje seguro.
-    # Los tests de 0/1 llamadas y de error verifican este contrato.
-    raise NotImplementedError("STUDENT TASK: conecta el submit con predict()")
+    is_submitted, values = collect_profile(st)
+    try:
+        if is_submitted:
+            result = predictor(**values)
+            render_prediction(st, result)
+    except ValueError:
+        st.error("No se pudo calcular el riesgo con los datos indicados.")
 
 
 def main() -> None:
