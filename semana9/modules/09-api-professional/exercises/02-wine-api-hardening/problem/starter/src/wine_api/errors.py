@@ -65,7 +65,7 @@ def field_path(loc: Sequence[Any]) -> str:
 async def handle_validation_error(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
-    # TODO S9.2a: FastAPI responde 422 con {"detail": [...]}, que no es nuestro
+    # S9.2a: FastAPI responde 422 con {"detail": [...]}, que no es nuestro
     # contrato. Recorre `exc.errors()`: cada error trae `type`, `loc` y `msg`.
     # - Si algún `type` es "json_invalid", el cuerpo no es JSON: 400 con
     #   `ErrorCode.INVALID_JSON` y sin `fields`.
@@ -74,39 +74,68 @@ async def handle_validation_error(
     #   usuario. Comprobación: tests/test_s9_2_errors.py
     for error in exc.errors():
         if error["type"] == "json_invalid":
-            return error_response(request, status_code=400, code=ErrorCode.INVALID_JSON, message="Body is not JSON")
-    return error_response(request, status_code=422, code=ErrorCode.VALIDATION_ERROR, message="Validation error") 
+            return error_response(
+                request,
+                status_code=400,
+                code=ErrorCode.INVALID_JSON,
+                message="Body is not JSON",
+            )
+    return error_response(
+        request,
+        status_code=422,
+        code=ErrorCode.VALIDATION_ERROR,
+        message="Validation error",
+        fields=[
+            FieldError(field=field_path(error["loc"]), message=error["msg"])
+            for error in exc.errors()
+        ],
+    )
+
 
 async def handle_api_error(request: Request, exc: WineApiError) -> JSONResponse:
-    # TODO S9.2b: traduce cualquier WineApiError usando los atributos de clase
+    # S9.2b: traduce cualquier WineApiError usando los atributos de clase
     # `status_code`, `code` y `message`. Una línea con `error_response`.
 
-    return error_response(request, status_code=exc.status_code, code=exc.code, message=exc.message)
+    return error_response(
+        request, status_code=exc.status_code, code=exc.code, message=exc.message
+    )
 
 
 async def handle_http_exception(
     request: Request, exc: StarletteHTTPException
 ) -> JSONResponse:
-    # TODO S9.2c: 404 y 405 los genera Starlette, no tus rutas. Busca el código
+    # S9.2c: 404 y 405 los genera Starlette, no tus rutas. Busca el código
     # en HTTP_ERROR_CODES (ErrorCode.HTTP_ERROR si no está) y responde con el
     # mismo sobre. ¿Por qué se registra la clase de Starlette y no la de FastAPI?
-    code, msg = HTTP_ERROR_CODES.get(exc.status_code)
-    if not code:
+    # RESPUESTA: Porque Starlette es la capa subyacente que maneja las excepciones HTTP,
+    # y FastAPI se basa en Starlette para la gestión de rutas y respuestas.
+    try:
+        code, msg = HTTP_ERROR_CODES[exc.status_code]
+    except KeyError:
         code = ErrorCode.HTTP_ERROR
         msg = exc.detail
-    
-    raise NotImplementedError("TODO S9.2c")
+
+    return error_response(request, status_code=exc.status_code, code=code, message=msg)
 
 
 async def handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
-    # TODO S9.2d: último recurso. Registra el detalle con `logger.exception`
+    # S9.2d: último recurso. Registra el detalle con `logger.exception`
     # (incluye el request_id) y devuelve 500 `internal_error` con un mensaje
     # genérico. El texto de `exc` nunca sale en la respuesta.
-    raise NotImplementedError("TODO S9.2d")
+    logger.exception("Unexpected error (request_id=%s)", current_request_id(request))
+    return error_response(
+        request,
+        status_code=500,
+        code=ErrorCode.INTERNAL_ERROR,
+        message="Unexpected server error",
+    )
 
 
 def install_error_handlers(app: FastAPI) -> None:
-    # TODO S9.2e: registra los cuatro manejadores con `app.add_exception_handler`
+    # S9.2e: registra los cuatro manejadores con `app.add_exception_handler`
     # cuando estén implementados. Hasta entonces la API usa los errores por
     # defecto de FastAPI ({"detail": ...}), que es justo lo que queremos cambiar.
-    return None
+    app.add_exception_handler(RequestValidationError, handle_validation_error)
+    app.add_exception_handler(WineApiError, handle_api_error)
+    app.add_exception_handler(StarletteHTTPException, handle_http_exception)
+    app.add_exception_handler(Exception, handle_unexpected_error)

@@ -35,7 +35,7 @@ class WineFeatures(BaseModel):
 
     model_config = ConfigDict(extra="forbid", strict=True)
 
-    # TODO S9.3d: añade `description=` a cada Field (unidad incluida, p. ej.
+    # S9.3d: añade `description=` a cada Field (unidad incluida, p. ej.
     # "Alcohol (% vol.)."). Swagger la muestra junto al rango; el test
     # `test_feature_fields_are_described` comprueba los once campos.
     fixed_acidity: float = Field(ge=0, le=20, description="Fixed acidity (g/dm³).")
@@ -43,8 +43,12 @@ class WineFeatures(BaseModel):
     citric_acid: float = Field(ge=0, le=2, description="Citric acid (g/dm³).")
     residual_sugar: float = Field(ge=0, le=20, description="Residual sugar (g/dm³).")
     chlorides: float = Field(ge=0, le=1, description="Chlorides (g/dm³).")
-    free_sulfur_dioxide: float = Field(ge=0, le=100, description="Free sulfur dioxide (mg/dm³).")
-    total_sulfur_dioxide: float = Field(ge=0, le=300, description="Total sulfur dioxide (mg/dm³).")
+    free_sulfur_dioxide: float = Field(
+        ge=0, le=100, description="Free sulfur dioxide (mg/dm³)."
+    )
+    total_sulfur_dioxide: float = Field(
+        ge=0, le=300, description="Total sulfur dioxide (mg/dm³)."
+    )
     density: float = Field(ge=0.98, le=1.01, description="Density (g/cm³).")
     ph: float = Field(ge=2.5, le=4.5, description="pH.")
     sulphates: float = Field(ge=0, le=3, description="Sulphates (g/dm³).")
@@ -75,6 +79,7 @@ class Prediction(BaseModel):
     confidence: float = Field(ge=0, le=1)
     model_version: str = Field(min_length=1)
     preprocessing_version: str = Field(min_length=1)
+
     # S9.1b
     @field_serializer("confidence")
     def serialize_confidence(self, confidence: float) -> float:
@@ -93,7 +98,11 @@ class PredictionResponse(BaseModel):
 
     @field_serializer("served_at")
     def serialize_served_at(self, served_at: datetime) -> str:
-        return served_at.astimezone(UTC).isoformat(timespec="milliseconds").replace('+00:00', 'Z')
+        return (
+            served_at.astimezone(UTC)
+            .isoformat(timespec="milliseconds")
+            .replace("+00:00", "Z")
+        )
 
 
 class HealthResponse(BaseModel):
