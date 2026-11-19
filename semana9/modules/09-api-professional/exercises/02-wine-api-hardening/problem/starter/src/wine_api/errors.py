@@ -18,6 +18,7 @@ HTTP_ERROR_CODES = {
     404: (ErrorCode.NOT_FOUND, "The requested resource does not exist"),
     405: (ErrorCode.METHOD_NOT_ALLOWED, "Method not allowed for this resource"),
 }
+GENERIC_HTTP_ERROR_MESSAGE = "The request could not be processed"
 
 
 class WineApiError(Exception):
@@ -109,11 +110,10 @@ async def handle_http_exception(
     # mismo sobre. ¿Por qué se registra la clase de Starlette y no la de FastAPI?
     # RESPUESTA: Porque Starlette es la capa subyacente que maneja las excepciones HTTP,
     # y FastAPI se basa en Starlette para la gestión de rutas y respuestas.
-    try:
-        code, msg = HTTP_ERROR_CODES[exc.status_code]
-    except KeyError:
-        code = ErrorCode.HTTP_ERROR
-        msg = exc.detail
+    # Mensaje fijo para el caso genérico
+    code, msg = HTTP_ERROR_CODES.get(
+        exc.status_code, (ErrorCode.HTTP_ERROR, GENERIC_HTTP_ERROR_MESSAGE)
+    )
 
     return error_response(request, status_code=exc.status_code, code=code, message=msg)
 
