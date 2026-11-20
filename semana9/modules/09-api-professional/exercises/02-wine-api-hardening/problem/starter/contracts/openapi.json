@@ -1,0 +1,475 @@
+{
+  "components": {
+    "schemas": {
+      "ErrorCode": {
+        "description": "Códigos estables: el cliente programa contra ellos, no contra el texto.",
+        "enum": [
+          "invalid_json",
+          "validation_error",
+          "not_found",
+          "method_not_allowed",
+          "http_error",
+          "model_unavailable",
+          "internal_error"
+        ],
+        "title": "ErrorCode",
+        "type": "string"
+      },
+      "ErrorDetail": {
+        "description": "Descripción estable del error.",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FieldError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Solo presente en errores de validación.",
+            "title": "Fields"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "description": "Sobre común de todas las respuestas de error (contrato de S7).",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "request_id"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "FieldError": {
+        "description": "Un campo del cuerpo que incumple el contrato.",
+        "properties": {
+          "field": {
+            "examples": [
+              "features.alcohol"
+            ],
+            "title": "Field",
+            "type": "string"
+          },
+          "message": {
+            "examples": [
+              "Input should be a valid number"
+            ],
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "message"
+        ],
+        "title": "FieldError",
+        "type": "object"
+      },
+      "HealthResponse": {
+        "description": "Estado del servicio y del modelo cargado.",
+        "properties": {
+          "model_status": {
+            "const": "ready",
+            "title": "Model Status",
+            "type": "string"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "service": {
+            "title": "Service",
+            "type": "string"
+          },
+          "status": {
+            "const": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "model_status",
+          "model_version",
+          "request_id"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "Prediction": {
+        "description": "Predicción pública: no incluye puntuaciones internas del modelo.",
+        "properties": {
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "model_version": {
+            "minLength": 1,
+            "title": "Model Version",
+            "type": "string"
+          },
+          "preprocessing_version": {
+            "minLength": 1,
+            "title": "Preprocessing Version",
+            "type": "string"
+          },
+          "quality_band": {
+            "$ref": "#/components/schemas/QualityBand"
+          }
+        },
+        "required": [
+          "quality_band",
+          "confidence",
+          "model_version",
+          "preprocessing_version"
+        ],
+        "title": "Prediction",
+        "type": "object"
+      },
+      "PredictionRequest": {
+        "additionalProperties": false,
+        "description": "Cuerpo de `POST /v1/predictions`.",
+        "properties": {
+          "features": {
+            "$ref": "#/components/schemas/WineFeatures"
+          }
+        },
+        "required": [
+          "features"
+        ],
+        "title": "PredictionRequest",
+        "type": "object"
+      },
+      "PredictionResponse": {
+        "description": "Respuesta de `POST /v1/predictions`.",
+        "properties": {
+          "prediction": {
+            "$ref": "#/components/schemas/Prediction"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "served_at": {
+            "title": "Served At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prediction",
+          "request_id",
+          "served_at"
+        ],
+        "title": "PredictionResponse",
+        "type": "object"
+      },
+      "QualityBand": {
+        "description": "Bandas de calidad que entiende el consumidor.",
+        "enum": [
+          "needs_review",
+          "acceptable",
+          "excellent"
+        ],
+        "title": "QualityBand",
+        "type": "string"
+      },
+      "WineFeatures": {
+        "additionalProperties": false,
+        "description": "Once variables fisicoquímicas de un vino tinto, con rangos inclusivos.",
+        "properties": {
+          "alcohol": {
+            "description": "Alcohol (% vol.).",
+            "maximum": 20.0,
+            "minimum": 5.0,
+            "title": "Alcohol",
+            "type": "number"
+          },
+          "chlorides": {
+            "description": "Chlorides (g/dm³).",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Chlorides",
+            "type": "number"
+          },
+          "citric_acid": {
+            "description": "Citric acid (g/dm³).",
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Citric Acid",
+            "type": "number"
+          },
+          "density": {
+            "description": "Density (g/cm³).",
+            "maximum": 1.01,
+            "minimum": 0.98,
+            "title": "Density",
+            "type": "number"
+          },
+          "fixed_acidity": {
+            "description": "Fixed acidity (g/dm³).",
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Fixed Acidity",
+            "type": "number"
+          },
+          "free_sulfur_dioxide": {
+            "description": "Free sulfur dioxide (mg/dm³).",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Free Sulfur Dioxide",
+            "type": "number"
+          },
+          "ph": {
+            "description": "pH.",
+            "maximum": 4.5,
+            "minimum": 2.5,
+            "title": "Ph",
+            "type": "number"
+          },
+          "residual_sugar": {
+            "description": "Residual sugar (g/dm³).",
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Residual Sugar",
+            "type": "number"
+          },
+          "sulphates": {
+            "description": "Sulphates (g/dm³).",
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Sulphates",
+            "type": "number"
+          },
+          "total_sulfur_dioxide": {
+            "description": "Total sulfur dioxide (mg/dm³).",
+            "maximum": 300.0,
+            "minimum": 0.0,
+            "title": "Total Sulfur Dioxide",
+            "type": "number"
+          },
+          "volatile_acidity": {
+            "description": "Volatile acidity (g/dm³).",
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Volatile Acidity",
+            "type": "number"
+          }
+        },
+        "required": [
+          "fixed_acidity",
+          "volatile_acidity",
+          "citric_acid",
+          "residual_sugar",
+          "chlorides",
+          "free_sulfur_dioxide",
+          "total_sulfur_dioxide",
+          "density",
+          "ph",
+          "sulphates",
+          "alcohol"
+        ],
+        "title": "WineFeatures",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "\nEsta API permite consultar la salud del servicio y obtener predicciones de\ncalidad del vino.\n\nTodas las respuestas incluyen un `request_id` (también en la cabecera\n`X-Request-Id`), útil para rastrear una petición en los logs y comunicar\nincidencias.\n\nLos errores siguen un sobre común: `{\"error\": {\"code\", \"message\", \"fields\"},\n\"request_id\"}`. Programa contra `error.code`, que es estable, y no contra el\ntexto de `message`.\n",
+    "summary": "API para predecir la calidad del vino.",
+    "title": "Wine Quality API",
+    "version": "1.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "description": "Comprueba que el servicio está vivo y que el modelo está cargado.\n\nÚsalo como sonda de disponibilidad antes de enviar predicciones. Un `503`\ncon `error.code = model_unavailable` significa que el modelo no está listo\ny que las predicciones también fallarán hasta que se cargue.",
+        "operationId": "read_health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Service and model status"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The prediction model is not ready"
+          }
+        },
+        "summary": "Check the health of the service",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/v1/predictions": {
+      "post": {
+        "description": "Crea una predicción de calidad a partir de las características del vino.\n\n- `features`: objeto con las once variables fisicoquímicas del vino. Cada\n  campo tiene un rango inclusivo (por ejemplo, `alcohol` entre 5 y 20 % vol.)\n  y no se admiten campos extra.\n- `prediction.confidence`: valor entre 0 y 1 redondeado a dos decimales.\n- `served_at`: instante en UTC, ISO 8601 con sufijo `Z`.\n- `request_id`: identificador de la petición para rastrearla en los logs.",
+        "operationId": "create_prediction_v1_predictions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "invalid_missing_feature": {
+                  "summary": "Missing feature: 422",
+                  "value": {
+                    "features": {
+                      "chlorides": 0.076,
+                      "citric_acid": 0.0,
+                      "density": 0.9978,
+                      "fixed_acidity": 7.4,
+                      "free_sulfur_dioxide": 11.0,
+                      "ph": 3.51,
+                      "residual_sugar": 1.9,
+                      "sulphates": 0.56,
+                      "total_sulfur_dioxide": 34.0,
+                      "volatile_acidity": 0.7
+                    }
+                  }
+                },
+                "invalid_out_of_range": {
+                  "summary": "Feature out of range: 422",
+                  "value": {
+                    "features": {
+                      "alcohol": 25.0,
+                      "chlorides": 0.076,
+                      "citric_acid": 0.0,
+                      "density": 0.9978,
+                      "fixed_acidity": 7.4,
+                      "free_sulfur_dioxide": 11.0,
+                      "ph": 3.51,
+                      "residual_sugar": 1.9,
+                      "sulphates": 0.56,
+                      "total_sulfur_dioxide": 34.0,
+                      "volatile_acidity": 0.7
+                    }
+                  }
+                },
+                "valid": {
+                  "summary": "Valid request",
+                  "value": {
+                    "features": {
+                      "alcohol": 9.4,
+                      "chlorides": 0.076,
+                      "citric_acid": 0.0,
+                      "density": 0.9978,
+                      "fixed_acidity": 7.4,
+                      "free_sulfur_dioxide": 11.0,
+                      "ph": 3.51,
+                      "residual_sugar": 1.9,
+                      "sulphates": 0.56,
+                      "total_sulfur_dioxide": 34.0,
+                      "volatile_acidity": 0.7
+                    }
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/PredictionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionResponse"
+                }
+              }
+            },
+            "description": "The created prediction"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request body"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request body out of contract"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Prediction model not ready"
+          }
+        },
+        "summary": "Create a new prediction",
+        "tags": [
+          "predictions"
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "description": "Endpoints de salud del servicio.",
+      "name": "health"
+    },
+    {
+      "description": "Predicciones de calidad del vino.",
+      "name": "predictions"
+    }
+  ]
+}
